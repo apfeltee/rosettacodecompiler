@@ -42,27 +42,33 @@ void init_io(FILE** fp, FILE* std, const char mode[], const char fn[])
 
 char* copystrn(const char* s, unsigned int len)
 {
-    #if 1
+    #if !defined(__CYGWIN__)
         return strndup(s, len);
     #else
-        unsigned int i;
-        char* rt;
-        rt = (char*)malloc(len+1);
-        for(i=0; i<len; i++)
+        char* res;
+        res = (char*)malloc(len + 1);
+        if(res == NULL)
         {
-            rt[i] = s[i];
+            return NULL;
         }
-        rt[i+1] = 0;
-        return rt;
+        memcpy(res, s, len+1);
+        return res;
+
     #endif
 }
 
 char* copystr(const char* s)
 {
-    #if 1
+    /*
+    * on cygwin, when C is compiled as C++, strdup is not provided.
+    * strdup is not standard c, but still... annoying.
+    */
+    #if !defined(__CYGWIN__)
         return strdup(s);
     #else
-        return copystrn(s, strlen(s));
+        unsigned int slen;
+        slen = strlen(s);
+        return copystrn(s, slen);
     #endif
 }
 
