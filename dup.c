@@ -12,15 +12,7 @@ void error(int err_line, int err_col, const char* fmt, ...)
     exit(1);
 }
 
-Tree_t* make_node(int node_type, Tree_t* left, Tree_t* right)
-{
-    Tree_t* t;
-    t = (Tree_t*)calloc(sizeof(Tree_t), 1);
-    t->node_type = node_type;
-    t->left = left;
-    t->right = right;
-    return t;
-}
+
 
 // remove trailing spaces
 char* rtrim(char* text, int* len)
@@ -48,6 +40,31 @@ void init_io(FILE** fp, FILE* std, const char mode[], const char fn[])
     setvbuf(*fp, NULL, _IOFBF, 0);
 }
 
+char* copystrn(const char* s, unsigned int len)
+{
+    #if 1
+        return strndup(s, len);
+    #else
+        unsigned int i;
+        char* rt;
+        rt = (char*)malloc(len+1);
+        for(i=0; i<len; i++)
+        {
+            rt[i] = s[i];
+        }
+        rt[i+1] = 0;
+        return rt;
+    #endif
+}
+
+char* copystr(const char* s)
+{
+    #if 1
+        return strdup(s);
+    #else
+        return copystrn(s, strlen(s));
+    #endif
+}
 
 int read_line(FILE* source_fp, char* dbuf, int max)
 {
@@ -81,6 +98,13 @@ int read_line(FILE* source_fp, char* dbuf, int max)
     return len;
 }
 
-
-
+Tree_t* make_node(int node_type, Tree_t* left, Tree_t* right)
+{
+    Tree_t* t;
+    t = (Tree_t*)calloc(sizeof(Tree_t), 1);
+    t->node_type = node_type;
+    t->left = left;
+    t->right = right;
+    return t;
+}
 

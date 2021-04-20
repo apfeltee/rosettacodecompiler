@@ -5,6 +5,7 @@ da_dim(vm_object, code);
 
 
 static FILE* source_fp;
+static FILE* dest_fp;
 
 static void run_vm(const code* obj, int32_t* data, int g_size, char **string_pool);
 
@@ -163,21 +164,21 @@ again:
             break;
         case COD_PRTC:
             {
-                printf("%c", sp[-1]);
+                fprintf(dest_fp, "%c", sp[-1]);
                 --sp;
                 goto again;
             }
             break;
         case COD_PRTS:
             {
-                printf("%s", string_pool[sp[-1]]);
+                fprintf(dest_fp, "%s", string_pool[sp[-1]]);
                 --sp;
                 goto again;
             }
             break;
         case COD_PRTI:
             {
-                printf("%d", sp[-1]);
+                fprintf(dest_fp, "%d", sp[-1]);
                 --sp;
                 goto again;
             }
@@ -304,7 +305,7 @@ static char** load_code(int* ds)
 
         text = rtrim(text, &line_len);
         text = translate(text);
-        string_pool[i] = strdup(text);
+        string_pool[i] = copystr(text);
     }
     for(;;)
     {
@@ -361,6 +362,7 @@ int vm_main(int argc, char* argv[])
     int* data;
     char** string_pool;
     init_io(&source_fp, stdin, "r", argc > 1 ? argv[1] : "");
+    init_io(&dest_fp, stdout, "wb", argc > 2 ? argv[2] : "");
     string_pool = load_code(&data_size);
     data = (int*)malloc(1000 + data_size);
     run_vm(vm_object, data, data_size, string_pool);

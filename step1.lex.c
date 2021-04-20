@@ -326,7 +326,7 @@ static TokenData_t gettok()
     }
 }
 
-static void run()
+static int run()
 {
     int i;
     bool found;
@@ -351,6 +351,7 @@ static void run()
         if(found == false)
         {
             fprintf(stderr, "failed to find token id %d in list!\n", tok.tok);
+            return 1;
         }
         if(tok.tok == tk_Integer)
         {
@@ -370,13 +371,13 @@ static void run()
     {
         fclose(dest_fp);
     }
+    return 0;
 }
 
 int lexer_main(int argc, char* argv[])
 {
     init_io(&source_fp, stdin, "r", argc > 1 ? argv[1] : "");
     init_io(&dest_fp, stdout, "wb", argc > 2 ? argv[2] : "");
-    run();
-    return 0;
+    return run();
 }
 

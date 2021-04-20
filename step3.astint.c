@@ -7,12 +7,12 @@ da_dim(ast_string_pool, char*);
 da_dim(ast_global_names, char*);
 da_dim(ast_global_values, int);
 
-static FILE* source_fp;
+static FILE *source_fp;
+static FILE *dest_fp;
 
 static int fetch_var_offset(const char *name);
 static int fetch_string_offset(char *st);
 static int interp(Tree_t *x);
-static void init_in(const char *fn);
 static int get_enum_value(const char name[]);
 static Tree_t *load_ast(FILE *fp);
 int astint_main(int argc, char *argv[]);
@@ -40,7 +40,7 @@ static int fetch_var_offset(const char* name)
     }
     da_add(ast_global_names, char*);
     n = da_len(ast_global_names) - 1;
-    ast_global_names[n] = strdup(name);
+    ast_global_names[n] = copystr(name);
     da_append(ast_global_values, 0, int);
     return n;
 }
@@ -53,9 +53,10 @@ static int fetch_string_offset(char* st)
     int len;
     char* p;
     char* q;
+    n = 0;
     len = strlen(st);
     st[len - 1] = '\0';
-    ++st;
+    st++;
     p = q = st;
     while((*p++ = *q++) != '\0')
     {
@@ -81,8 +82,85 @@ static int fetch_string_offset(char* st)
     }
     da_add(ast_string_pool, char*);
     n = da_len(ast_string_pool) - 1;
-    ast_string_pool[n] = strdup(st);
+    ast_string_pool[n] = copystr(st);
     return da_len(ast_string_pool) - 1;
+}
+
+
+
+
+static int get_enum_value(const char* name)
+{
+    size_t i;
+    for(i = 0; i < sizeof(analyzer_atr) / sizeof(analyzer_atr[0]); i++)
+    {
+        if(strcmp(analyzer_atr[i].enum_text, name) == 0)
+        {
+            return analyzer_atr[i].node_type;
+        }
+    }
+    error(0, 0, "Unknown token %s\n", name);
+    return -1;
+}
+
+static Tree_t* load_ast(FILE* fp)
+{
+    int n;
+    int len;
+    int node_type;
+    char* p;
+    char* tok;
+    char* yytext;
+    char inbuf[MAX_LINELENGTH + 1];
+    Tree_t* left;
+    Tree_t* right;
+    n = 0;
+    //yytext = read_line(fp, &len);
+    len = read_line(fp, inbuf, MAX_LINELENGTH);
+    yytext = inbuf;
+    yytext = rtrim(yytext, &len);
+
+    // get first token
+    tok = strtok(yytext, " ");
+
+    if(tok[0] == ';')
+    {
+        return NULL;
+    }
+    node_type = get_enum_value(tok);
+    // if there is extra data, get it
+    p = tok + strlen(tok);
+    if(p != &yytext[len])
+    {
+        for(++p; isspace((int)(*p)); ++p)
+        {
+        }
+        switch(node_type)
+        {
+            case nd_Ident:
+                {
+                    n = fetch_var_offset(p);
+                }
+                break;
+            case nd_Integer:
+                {
+                    n = strtol(p, NULL, 0);
+                }
+                break;
+            case nd_String:
+                {
+                    n = fetch_string_offset(p);
+                }
+                break;
+            default:
+                error(0, 0, "Unknown node type: %s\n", p);
+                break;
+        }
+        return make_leaf(node_type, n);
+    }
+    left = load_ast(fp);
+    right = load_ast(fp);
+    return make_node(node_type, left, right);
 }
 
 static int interp(Tree_t* x)
@@ -211,19 +289,19 @@ static int interp(Tree_t* x)
             break;
         case nd_Prtc:
             {
-                printf("%c", interp(x->left));
+                fprintf(dest_fp, "%c", interp(x->left));
                 return 0;
             }
             break;
         case nd_Prti:
             {
-                printf("%d", interp(x->left));
+                fprintf(dest_fp, "%d", interp(x->left));
                 return 0;
             }
             break;
         case nd_Prts:
             {
-                printf("%s", ast_string_pool[interp(x->left)]);
+                fprintf(dest_fp, "%s", ast_string_pool[interp(x->left)]);
                 return 0;
             }
             break;
@@ -236,104 +314,17 @@ static int interp(Tree_t* x)
             break;
         default:
             error(0, 0, "interp: unknown tree type %d\n", x->node_type);
+            return 1;
+            break;
     }
     return 0;
 }
-
-static void init_in(const char* fn)
-{
-    if(fn[0] == '\0')
-    {
-        source_fp = stdin;
-    }
-    else
-    {
-        source_fp = fopen(fn, "r");
-        if(source_fp == NULL)
-        {
-            error(0, 0, "Can't open %s\n", fn);
-        }
-    }
-}
-
-static int get_enum_value(const char* name)
-{
-    size_t i;
-    for(i = 0; i < sizeof(analyzer_atr) / sizeof(analyzer_atr[0]); i++)
-    {
-        if(strcmp(analyzer_atr[i].enum_text, name) == 0)
-        {
-            return analyzer_atr[i].node_type;
-        }
-    }
-    error(0, 0, "Unknown token %s\n", name);
-    return -1;
-}
-
-static Tree_t* load_ast(FILE* fp)
-{
-    int n;
-    int len;
-    int node_type;
-    char* p;
-    char* tok;
-    char* yytext;
-    char inbuf[MAX_LINELENGTH + 1];
-    Tree_t* left;
-    Tree_t* right;
-    //yytext = read_line(fp, &len);
-    len = read_line(fp, inbuf, MAX_LINELENGTH);
-    yytext = inbuf;
-    yytext = rtrim(yytext, &len);
-
-    // get first token
-    tok = strtok(yytext, " ");
-
-    if(tok[0] == ';')
-    {
-        return NULL;
-    }
-    node_type = get_enum_value(tok);
-    // if there is extra data, get it
-    p = tok + strlen(tok);
-    if(p != &yytext[len])
-    {
-        for(++p; isspace((int)(*p)); ++p)
-        {
-        }
-        switch(node_type)
-        {
-            case nd_Ident:
-                {
-                    n = fetch_var_offset(p);
-                }
-                break;
-            case nd_Integer:
-                {
-                    n = strtol(p, NULL, 0);
-                }
-                break;
-            case nd_String:
-                {
-                    n = fetch_string_offset(p);
-                }
-                break;
-            default:
-                error(0, 0, "Unknown node type: %s\n", p);
-        }
-        return make_leaf(node_type, n);
-    }
-    left = load_ast(fp);
-    right = load_ast(fp);
-    return make_node(node_type, left, right);
-}
-
 
 int astint_main(int argc, char* argv[])
 {
     Tree_t* x;
-    init_in(argc > 1 ? argv[1] : "");
+    init_io(&source_fp, stdin, "r", argc > 1 ? argv[1] : "");
+    init_io(&dest_fp, stdout, "wb", argc > 2 ? argv[2] : "");
     x = load_ast(source_fp);
-    interp(x);
-    return 0;
+    return interp(x);
 }

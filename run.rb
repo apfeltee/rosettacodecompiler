@@ -2,19 +2,10 @@
 
 require "open3"
 
-EXEFILE_WINDOWS = File.join(".", "a.exe")
-EXEFILE_LINUX   = File.join(".", "a.out")
-
-EXEFILE = (
-  if File.file?(EXEFILE_LINUX) then
-    EXEFILE_LINUX
-  else
-    EXEFILE_WINDOWS
-  end
-)
+EXEFILE = File.join(__dir__, "backend.exe")
 
 
-def runstage(stnam, infile, outfile)
+def runstage_old(stnam, infile, outfile)
   retv = nil
   indata = File.read(infile)
   Open3.popen2(EXEFILE, stnam) do| input, output, wait_thr |
@@ -32,11 +23,32 @@ def runstage(stnam, infile, outfile)
   return retv
 end
 
+def runstage(stnam, infile, outfile)
+  insize = File.size(infile)
+  # do addr checks, but discard leak checks - the backend
+  # does not free anything (yet!)
+  ENV["ASAN_OPTIONS"] = "detect_leaks=0"
+  rt = system(EXEFILE, stnam, infile, outfile)
+  ecode = $?
+  if rt then
+    if File.file?(outfile) then
+      outsize = File.size(outfile)
+      $stderr.printf("stage %p: wrote %d bytes from %d bytes input\n", stnam, outsize, insize)
+    else
+      $stderr.printf("stage %p: no outputfile written?\n", stnam)
+    end
+  end
+  return [rt, ecode]
+end
+
 def check(stnam, infile, outfile)
-  r = runstage(stnam, infile, outfile)
-  if r != 0 then
+  if File.file?(outfile) then
+    File.delete(outfile)
+  end
+  rt, code = runstage(stnam, infile, outfile)
+  if not rt then
     $stderr.printf("stage %p failed with status %d: inputfile (%s) exists=%p, outputfile (%s) exists=%p\n",
-      stnam, r, infile, File.file?(infile), outfile, File.file?(outfile))
+      stnam, code, infile, File.file?(infile), outfile, File.file?(outfile))
     $stderr.printf("command was: %s %s < %s > %s\n", EXEFILE, stnam, infile, outfile)
     if File.file?(outfile) then
       #$stderr.printf("contents of %p:\n")

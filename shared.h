@@ -250,6 +250,7 @@ static const NodeItem_t displaynodes_data[]=
     {"NotEqual", nd_Neq},
     {"And", nd_And},
     {"Or", nd_Or},
+    {NULL, 0},
 };
 
 
@@ -315,6 +316,7 @@ static const CodeItem_t codemap_data[] =
     { "prts", COD_PRTS },
     { "prti", COD_PRTI },
     { "halt", COD_HALT },
+    {NULL, 0},
 };
 
 // dependency: Ordered by NodeType, must remain in same order as NodeType enum
@@ -345,6 +347,7 @@ static const AttributeItem_t codegen_atr[] = {
     { "NotEqual", nd_Neq, COD_NE },
     { "And", nd_And, COD_AND },
     { "Or", nd_Or, COD_OR },
+    {NULL, 0, 0}
 };
 
 // dependency: Ordered by tok, must remain in same order as TokenType enum
@@ -380,6 +383,7 @@ static const DependencyItem_t  analyzer_atr[] = {
     { "Ident",  "Identifier",   tk_Ident,   false, false, false, -1, nd_Ident },
     { "IntLit", "Integer",      tk_Integer, false, false, false, -1, nd_Integer },
     { "StrLit", "String",       tk_String,  false, false, false, -1, nd_String },
+    {NULL,      NULL,           0,          false, false, false, -1, 0}
 };
 
 
@@ -388,6 +392,8 @@ void vm_emit_byte(int c);
 void error(int err_line, int err_col, const char *fmt, ...);
 Tree_t *make_node(int node_type, Tree_t *left, Tree_t *right);
 char *rtrim(char *text, int *len);
+char* copystrn(const char* s, unsigned int len);
+char* copystr(const char* s);
 void init_io(FILE **fp, FILE *std, const char mode[], const char fn[]);
 int read_line(FILE *source_fp, char* dest, int maxlen);
 

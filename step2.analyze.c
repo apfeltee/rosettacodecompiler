@@ -25,7 +25,7 @@ static Tree_t *expr(int p);
 static Tree_t *paren_expr();
 static Tree_t *stmt();
 static Tree_t *parse();
-static void prt_ast(Tree_t *t);
+static int prt_ast(Tree_t *t);
 int analyzer_main(int argc, char *argv[]);
 
 
@@ -34,7 +34,7 @@ static Tree_t* make_leaf(NodeType node_type, char* value)
     Tree_t* t;
     t = (Tree_t*)calloc(sizeof(Tree_t), 1);
     t->node_type = node_type;
-    t->svalue = strdup(value);
+    t->svalue = copystr(value);
     return t;
 }
 
@@ -83,7 +83,7 @@ static TokenData_t gettok()
         for(++p; isspace((int)(*p)); ++p)
         {
         }
-        tok.text = strdup(p);
+        tok.text = copystr(p);
     }
     return tok;
 }
@@ -289,48 +289,55 @@ static Tree_t* parse()
     return t;
 }
 
-static void prt_ast(Tree_t* t)
+static int prt_ast(Tree_t* t)
 {
     int i;
     bool found;
     found = false;
     if(t == NULL)
     {
-        printf(";\n");
+        fprintf(dest_fp, ";\n");
     }
     else
     {
-        //printf("%-14s ", Display_nodes[t->node_type]);
         for(i=0; displaynodes_data[i].str != NULL; i++)
         {
             if(displaynodes_data[i].tok == t->node_type)
             {
                 found = true;
-                printf("%-14s ", displaynodes_data[i].str);
+                fprintf(dest_fp, "%-14s ", displaynodes_data[i].str);
             }
         }
         if(!found)
         {
             fprintf(stderr, "analyzer: prt_ast: did not found node for type %d!\n", t->node_type);
+            return 1;
         }
         if(t->node_type == nd_Ident || t->node_type == nd_Integer || t->node_type == nd_String)
         {
-            printf("%s\n", t->svalue);
+            fprintf(dest_fp, "%s\n", t->svalue);
         }
         else
         {
-            printf("\n");
+            fprintf(dest_fp, "\n");
             prt_ast(t->left);
             prt_ast(t->right);
         }
     }
+    return 0;
 }
 
 
 int analyzer_main(int argc, char* argv[])
 {
+    Tree_t* t;
     init_io(&source_fp, stdin, "r", argc > 1 ? argv[1] : "");
     init_io(&dest_fp, stdout, "wb", argc > 2 ? argv[2] : "");
-    prt_ast(parse());
-    return 0;
+    t = parse();
+    if(t != NULL)
+    {
+        return prt_ast(t);
+    }
+    fprintf(stderr, "analyzer: parse() failed\n");
+    return 1;
 }

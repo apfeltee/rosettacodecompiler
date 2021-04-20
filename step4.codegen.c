@@ -17,9 +17,9 @@ static int fetch_var_offset(const char *id);
 static int fetch_string_offset(const char *st);
 static int hole(void);
 static void fix(int src, int dst);
-static void code_gen(Tree_t *x);
+static bool code_gen(Tree_t *x);
 static void code_finish(void);
-static void list_code(void);
+static int list_code(void);
 static Tree_t *load_ast(FILE *fp);
 int cgen_main(int argc, char *argv[]);
 
@@ -28,7 +28,7 @@ static Tree_t* make_leaf(int node_type, char* value)
     Tree_t* t;
     t = (Tree_t*)calloc(sizeof(Tree_t), 1);
     t->node_type = node_type;
-    t->svalue = strdup(value);
+    t->svalue = copystr(value);
     return t;
 }
 
@@ -46,7 +46,7 @@ static int fetch_var_offset(const char* id)
     }
     da_add(cgen_globals, char*);
     n = da_len(cgen_globals) - 1;
-    cgen_globals[n] = strdup(id);
+    cgen_globals[n] = copystr(id);
     return n;
 }
 
@@ -63,7 +63,7 @@ static int fetch_string_offset(const char* st)
     }
     da_add(cgen_string_pool, char*);
     n = da_len(cgen_string_pool) - 1;
-    cgen_string_pool[n] = strdup(st);
+    cgen_string_pool[n] = copystr(st);
     return n;
 }
 
@@ -109,12 +109,75 @@ static int hole()
 }
 
 
-void code_gen(Tree_t* x)
+static void code_finish()
 {
-    int p1, p2, n;
+    emit_byte(COD_HALT);
+}
 
+
+static int get_enum_value(const char name[])
+{
+    for(size_t i = 0; i < sizeof(codegen_atr) / sizeof(codegen_atr[0]); i++)
+    {
+        if(strcmp(codegen_atr[i].enum_text, name) == 0)
+        {
+            return codegen_atr[i].node_type;
+        }
+    }
+    error(0, 0, "Unknown token %s\n", name);
+    return -1;
+}
+
+static Tree_t* load_ast(FILE* fp)
+{
+    int len;
+    int node_type;
+    char* p;
+    char* tok;
+    char* yytext;
+    char inbuf[MAX_LINELENGTH + 1];
+    Tree_t* left;
+    Tree_t* right;
+    //yytext = read_line(fp, &len);
+    len = read_line(fp, inbuf, MAX_LINELENGTH);
+    yytext = inbuf;
+    if(len == 0)
+    {
+        fprintf(stderr, "codegen: load_ast: NULL line?\n");
+        return NULL;
+    }
+    yytext = rtrim(yytext, &len);
+    // get first token
+    tok = strtok(yytext, " ");
+    if(tok[0] == ';')
+    {
+        return NULL;
+    }
+    node_type = get_enum_value(tok);
+    // if there is extra data, get it
+    p = tok + strlen(tok);
+    if(p != &yytext[len])
+    {
+        for(++p; isspace((int)(*p)); ++p)
+        {
+        }
+        return make_leaf(node_type, p);
+    }
+    left = load_ast(fp);
+    right = load_ast(fp);
+    return make_node(node_type, left, right);
+}
+
+
+bool code_gen(Tree_t* x)
+{
+    int n;
+    int p1;
+    int p2;
     if(x == NULL)
-        return;
+    {
+        return 0;
+    }
     switch(x->node_type)
     {
         case nd_Ident:
@@ -204,22 +267,23 @@ void code_gen(Tree_t* x)
             break;
         default:
             error(0, 0, "error in code generator - found %d, expecting operator\n", x->node_type);
+            return false;
+            break;
     }
+    return true;
 }
 
-static void code_finish()
-{
-    emit_byte(COD_HALT);
-}
 
-static void list_code()
+static int list_code()
 {
+    int i;
+    code* pc;
     fprintf(dest_fp, "Datasize: %d Strings: %d\n", da_len(cgen_globals), da_len(cgen_string_pool));
-    for(int i = 0; i < da_len(cgen_string_pool); ++i)
+    for(i = 0; i < da_len(cgen_string_pool); i++)
     {
         fprintf(dest_fp, "%s\n", cgen_string_pool[i]);
     }
-    code* pc = cgen_object;
+    pc = cgen_object;
 
 again:
     fprintf(dest_fp, "%5d ", (int)(pc - cgen_object));
@@ -304,70 +368,35 @@ again:
             break;
         default:
             error(0, 0, "listcode:Unknown opcode %d\n", *(pc - 1));
+            return 1;
+            break;
     }
-}
-
-
-static int get_enum_value(const char name[])
-{
-    for(size_t i = 0; i < sizeof(codegen_atr) / sizeof(codegen_atr[0]); i++)
-    {
-        if(strcmp(codegen_atr[i].enum_text, name) == 0)
-        {
-            return codegen_atr[i].node_type;
-        }
-    }
-    error(0, 0, "Unknown token %s\n", name);
-    return -1;
-}
-
-static Tree_t* load_ast(FILE* fp)
-{
-    int len;
-    int node_type;
-    char* p;
-    char* tok;
-    char* yytext;
-    char inbuf[MAX_LINELENGTH + 1];
-    Tree_t* left;
-    Tree_t* right;
-    //yytext = read_line(fp, &len);
-    len = read_line(fp, inbuf, MAX_LINELENGTH);
-    yytext = inbuf;
-    if(len == 0)
-    {
-        fprintf(stderr, "codegen: load_ast: NULL line?\n");
-    }
-    yytext = rtrim(yytext, &len);
-    // get first token
-    tok = strtok(yytext, " ");
-    if(tok[0] == ';')
-    {
-        return NULL;
-    }
-    node_type = get_enum_value(tok);
-    // if there is extra data, get it
-    p = tok + strlen(tok);
-    if(p != &yytext[len])
-    {
-        for(++p; isspace((int)(*p)); ++p)
-        {
-        }
-        return make_leaf(node_type, p);
-    }
-    left = load_ast(fp);
-    right = load_ast(fp);
-    return make_node(node_type, left, right);
+    return 0;
 }
 
 
 int cgen_main(int argc, char* argv[])
 {
+    Tree_t* t;
     init_io(&source_fp, stdin, "r", argc > 1 ? argv[1] : "");
     init_io(&dest_fp, stdout, "wb", argc > 2 ? argv[2] : "");
-    code_gen(load_ast(source_fp));
-    code_finish();
-    list_code();
-    return 0;
+    t = load_ast(source_fp);
+    if(t != NULL)
+    {
+        if(code_gen(t))
+        {
+            code_finish();
+            return list_code();
+        }
+        else
+        {
+            fprintf(stderr, "codegen: failed to generate code\n");
+        }
+    }
+    else
+    {
+        fprintf(stderr, "codegen: failed to load ast\n");
+    }
+    return 1;
 }
 
