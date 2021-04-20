@@ -277,7 +277,7 @@ static const LexItem_t lextokens_data[] =
     {"kwdELSE", tk_Else},
     {"kwdWHILE", tk_While},
     {"kwdPRINT", tk_Print},
-    {"putc", tk_Putc},
+    {"kwdPUTC", tk_Putc},
     {"LeftParen", tk_Lparen},
     {"RightParen", tk_Rparen},
     {"LeftBrace", tk_Lbrace},
@@ -321,7 +321,8 @@ static const CodeItem_t codemap_data[] =
 
 // dependency: Ordered by NodeType, must remain in same order as NodeType enum
 
-static const AttributeItem_t codegen_atr[] = {
+static const AttributeItem_t codeattr_data[] =
+{
     { "Identifier", nd_Ident, -1 },
     { "String", nd_String, -1 },
     { "Integer", nd_Integer, -1 },
@@ -351,7 +352,8 @@ static const AttributeItem_t codegen_atr[] = {
 };
 
 // dependency: Ordered by tok, must remain in same order as TokenType enum
-static const DependencyItem_t  analyzer_atr[] = {
+static const DependencyItem_t  anattr_data[] =
+{
     { "EOI",    "End_of_input", tk_EOI,     false, false, false, -1, -1 },
     { "*",      "Op_multiply",  tk_Mul,     false, true, false, 13, nd_Mul },
     { "/",      "Op_divide",    tk_Div,     false, true, false, 13, nd_Div },

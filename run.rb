@@ -37,6 +37,10 @@ def runstage(stnam, infile, outfile)
     else
       $stderr.printf("stage %p: no outputfile written?\n", stnam)
     end
+  else
+    if File.file?(outfile) then
+      File.delete(outfile)
+    end
   end
   return [rt, ecode]
 end
@@ -49,7 +53,7 @@ def check(stnam, infile, outfile)
   if not rt then
     $stderr.printf("stage %p failed with status %d: inputfile (%s) exists=%p, outputfile (%s) exists=%p\n",
       stnam, code, infile, File.file?(infile), outfile, File.file?(outfile))
-    $stderr.printf("command was: %s %s < %s > %s\n", EXEFILE, stnam, infile, outfile)
+    $stderr.printf("command was: ./%s %s %p %p\n", File.basename(EXEFILE), stnam, infile, outfile)
     if File.file?(outfile) then
       #$stderr.printf("contents of %p:\n")
       #File.foreach()

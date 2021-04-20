@@ -1,10 +1,6 @@
 
 #include "shared.h"
 
-#define NELEMS(arr) (sizeof(arr) / sizeof(arr[0]))
-
-
-
 
 static TokenData_t tok;
 static FILE *source_fp;
@@ -43,11 +39,14 @@ static Tree_t* make_leaf(NodeType node_type, char* value)
 static int get_enum(const char* name)
 {
     size_t i;
-    for(i = 0; i < NELEMS(analyzer_atr); i++)
+    for(i = 0; anattr_data[i].text != NULL; i++)
     {
-        if(strcmp(analyzer_atr[i].enum_text, name) == 0)
+        if(anattr_data[i].enum_text != NULL)
         {
-            return analyzer_atr[i].tok;
+            if(strcmp(anattr_data[i].enum_text, name) == 0)
+            {
+                return anattr_data[i].tok;
+            }
         }
     }
     error(0, 0, "Unknown token %s\n", name);
@@ -97,8 +96,8 @@ static void expect(const char* msg, int s)
     }
     error(tok.err_ln, tok.err_col, "%s: Expecting '%s', found '%s'\n",
         msg,
-        analyzer_atr[s].text,
-        analyzer_atr[tok.tok].text
+        anattr_data[s].text,
+        anattr_data[tok.tok].text
     );
 }
 
@@ -121,7 +120,7 @@ static Tree_t* expr(int p)
             {
                 op = tok.tok;
                 tok = gettok();
-                node = expr(analyzer_atr[tk_Negate].precedence);
+                node = expr(anattr_data[tk_Negate].precedence);
                 //x = (op == tk_Sub) ? make_node(nd_Negate, node, NULL) : node;
                 if(op == tk_Sub)
                 {
@@ -136,7 +135,7 @@ static Tree_t* expr(int p)
         case tk_Not:
             {
                 tok = gettok();
-                x = make_node(nd_Not, expr(analyzer_atr[tk_Not].precedence), NULL);
+                x = make_node(nd_Not, expr(anattr_data[tk_Not].precedence), NULL);
             }
             break;
         case tk_Ident:
@@ -152,20 +151,20 @@ static Tree_t* expr(int p)
             }
             break;
         default:
-            error(tok.err_ln, tok.err_col, "Expecting a primary, found: %s\n", analyzer_atr[tok.tok].text);
+            error(tok.err_ln, tok.err_col, "Expecting a primary, found: %s\n", anattr_data[tok.tok].text);
     }
 
-    while(analyzer_atr[tok.tok].is_binary && analyzer_atr[tok.tok].precedence >= p)
+    while(anattr_data[tok.tok].is_binary && anattr_data[tok.tok].precedence >= p)
     {
         op = tok.tok;
         tok = gettok();
-        q = analyzer_atr[op].precedence;
-        if(!analyzer_atr[op].right_associative)
+        q = anattr_data[op].precedence;
+        if(!anattr_data[op].right_associative)
         {
             q++;
         }
         node = expr(q);
-        x = make_node(analyzer_atr[op].node_type, x, node);
+        x = make_node(anattr_data[op].node_type, x, node);
     }
     return x;
 }
@@ -272,7 +271,7 @@ static Tree_t* stmt()
             break;
         default:
             error(tok.err_ln, tok.err_col, "expecting start of statement, found '%s'\n",
-                  analyzer_atr[tok.tok].text);
+                  anattr_data[tok.tok].text);
     }
     return t;
 }

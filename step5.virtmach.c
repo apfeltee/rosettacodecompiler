@@ -317,7 +317,7 @@ static char** load_code(int* ds)
         {
             break;
         }
-        fprintf(stderr, "vmachine: load_code:loop: line_len=%d, text=<<%.*s>>\n", line_len, line_len, inbuf);
+        //fprintf(stderr, "vmachine: load_code:loop: line_len=%d, text=<<%.*s>>\n", line_len, line_len, inbuf);
 
         text = rtrim(text, &line_len);
         offset = atoi(strtok(text, " "));// get the offset

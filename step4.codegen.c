@@ -69,7 +69,7 @@ static int fetch_string_offset(const char* st)
 
 static int type_to_op(int type)
 {
-    return codegen_atr[type].opcode;
+    return codeattr_data[type].opcode;
 }
 
 static void fix(int src, int dst)
@@ -117,11 +117,13 @@ static void code_finish()
 
 static int get_enum_value(const char name[])
 {
-    for(size_t i = 0; i < sizeof(codegen_atr) / sizeof(codegen_atr[0]); i++)
+    size_t i;
+    //for(i = 0; i < sizeof(codeattr_data) / sizeof(codeattr_data[0]); i++)
+    for(i=0; codeattr_data[i].enum_text != NULL; i++)
     {
-        if(strcmp(codegen_atr[i].enum_text, name) == 0)
+        if(strcmp(codeattr_data[i].enum_text, name) == 0)
         {
-            return codegen_atr[i].node_type;
+            return codeattr_data[i].node_type;
         }
     }
     error(0, 0, "Unknown token %s\n", name);

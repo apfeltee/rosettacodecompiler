@@ -99,7 +99,7 @@ int read_line(FILE* source_fp, char* dbuf, int max)
             break;
         }
     }
-    fprintf(stderr, "read_line:len=%d, str=<<%.*s>>\n", len, len, dbuf);
+    //fprintf(stderr, "read_line:len=%d, str=<<%.*s>>\n", len, len, dbuf);
     //dbuf[len] = 0;
     return len;
 }

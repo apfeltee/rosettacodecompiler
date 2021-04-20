@@ -92,11 +92,11 @@ static int fetch_string_offset(char* st)
 static int get_enum_value(const char* name)
 {
     size_t i;
-    for(i = 0; i < sizeof(analyzer_atr) / sizeof(analyzer_atr[0]); i++)
+    for(i = 0; i < sizeof(anattr_data) / sizeof(anattr_data[0]); i++)
     {
-        if(strcmp(analyzer_atr[i].enum_text, name) == 0)
+        if(strcmp(anattr_data[i].enum_text, name) == 0)
         {
-            return analyzer_atr[i].node_type;
+            return anattr_data[i].node_type;
         }
     }
     error(0, 0, "Unknown token %s\n", name);
