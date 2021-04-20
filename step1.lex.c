@@ -8,9 +8,7 @@ struct keywordinfo_tag_t
     int sym;
 };
 
-
 da_dim(lexer_text, char);
-
 
 static const keywordinfo_t kwds[] =
 {
