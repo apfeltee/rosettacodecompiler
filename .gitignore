@@ -22,6 +22,7 @@ drmemory*
 
 ## files emitted by each stage
 td.*.txt
+td?.*.txt
 
 # kate leaving junk all over the place
 *.kate-swp
