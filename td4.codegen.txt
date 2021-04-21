@@ -1,0 +1,9 @@
+Datasize: 0 Strings: 1
+"Hello, World!\n"
+    0 push  0
+    4 fetch [4]
+    8 fetch [8]
+   12 fetch [12]
+   16 fetch [16]
+   20 fetch [20]
+   24 

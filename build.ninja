@@ -1,0 +1,25 @@
+rule cc
+  deps = gcc
+  depfile = $in.d
+  command = clang++ -std=c++20 -Wall -Wextra -g3 -ggdb3 -fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address -fdiagnostics-color=always -I . -MMD -MF $in.d -c $in -o $out
+  description = [CC] $in -> $out
+
+rule link
+  command = clang++ -std=c++20 -g3 -ggdb3 -fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address -fdiagnostics-color=always -I . -fno-optimize-sibling-calls -fno-omit-frame-pointer -fsanitize=address -fdiagnostics-color=always -o $out $in
+  description = [LINK] $out
+
+build ./dup.o: cc ./dup.cpp
+  depfile = ./dup.cpp.d
+build ./main.o: cc ./main.cpp
+  depfile = ./main.cpp.d
+build ./step1.lex.o: cc ./step1.lex.cpp
+  depfile = ./step1.lex.cpp.d
+build ./step2.analyze.o: cc ./step2.analyze.cpp
+  depfile = ./step2.analyze.cpp.d
+build ./step3.astint.o: cc ./step3.astint.cpp
+  depfile = ./step3.astint.cpp.d
+build ./step4.codegen.o: cc ./step4.codegen.cpp
+  depfile = ./step4.codegen.cpp.d
+build ./step5.virtmach.o: cc ./step5.virtmach.cpp
+  depfile = ./step5.virtmach.cpp.d
+build backend.exe: link ./dup.o ./main.o ./step1.lex.o ./step2.analyze.o ./step3.astint.o ./step4.codegen.o ./step5.virtmach.o

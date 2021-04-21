@@ -1,13 +1,17 @@
 
 exopts = -fno-optimize-sibling-calls -fno-omit-frame-pointer
 
-srcfiles = step1.lex.c  step2.analyze.c  step3.astint.c  step4.codegen.c  step5.virtmach.c  dup.c  main.c
+srcfiles = step1.lex.cpp  step2.analyze.cpp  step3.astint.cpp  step4.codegen.cpp  step5.virtmach.cpp  dup.cpp  main.cpp
 exename = backend.exe
 
-all: normal
+all: runninja
+
+runninja:
+	ruby genmk.rb
+	ninja -j1
 
 normal:
-	g++ -xc++ -std=c++20 -g3 -ggdb3 -Wall -Wextra $(exopts) $(srcfiles) -o $(exename)
+	clang++ -std=c++20 -g3 -ggdb3 -Wall -Wextra $(exopts) $(srcfiles) -o $(exename)
 
 gccsani:
 	g++ -std=c++20 -g3 -ggdb3 -Wall -Wextra $(exopts) -finstrument-functions -fsanitize=address $(srcfiles) -o $(exename)

@@ -1,50 +1,53 @@
 
 #pragma once
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <string.h>
+#include <iostream>
+#include <vector>
+#include <map>
+#include <cstdlib>
+#include <cstdio>
+#include <cstdarg>
+#include <cstring>
+#include <cctype>
+#include <climits>
 #include <errno.h>
-#include <stdbool.h>
-#include <limits.h>
+#
 
 #define NELEMS(arr) (sizeof(arr) / sizeof(arr[0]))
 
 
-#define da_dim(name, type)  \
-    type* name = NULL;      \
-    int _qy_##name##_p = 0; \
-    int _qy_##name##_max = 0
+#if 1
+    #define da_dim(name, type)  \
+        type* name = NULL;      \
+        int _qy_##name##_p = 0; \
+        int _qy_##name##_max = 0
 
-#define da_redim(name, type) \
-    do \
-    { \
-        if(_qy_##name##_p >= _qy_##name##_max) \
+    #define da_redim(name, type) \
+        do \
         { \
-            name = (type*)realloc(name, (_qy_##name##_max += 32) * sizeof(name[0])); \
-        } \
-    } while(0)
+            if(_qy_##name##_p >= _qy_##name##_max) \
+            { \
+                name = (type*)realloc(name, (_qy_##name##_max += 32) * sizeof(name[0])); \
+            } \
+        } while(0)
 
-#define da_rewind(name) _qy_##name##_p = 0
+    #define da_rewind(name) _qy_##name##_p = 0
 
-#define da_append(name, x, type)          \
-    do                              \
-    {                               \
-        da_redim(name, type);             \
-        name[_qy_##name##_p++] = x; \
-    } while(0)
-#define da_len(name) _qy_##name##_p
+    #define da_append(name, x, type)          \
+        do                              \
+        {                               \
+            da_redim(name, type);             \
+            name[_qy_##name##_p++] = x; \
+        } while(0)
+    #define da_len(name) _qy_##name##_p
 
-#define da_add(name, type)      \
-    do                    \
-    {                     \
-        da_redim(name, type);   \
-        _qy_##name##_p++; \
-    } while(0)
-
-
+    #define da_add(name, type)      \
+        do                    \
+        {                     \
+            da_redim(name, type);   \
+            _qy_##name##_p++; \
+        } while(0)
+#endif
 
 /*
 lexer -> analyzer -> codegen -> vmachine
@@ -170,7 +173,8 @@ struct Tree_tag_t
     Tree_t* left;
     Tree_t* right;
     int ivalue;
-    char* svalue;
+    //char* svalue;
+    std::string svalue;
 
 };
 
@@ -180,8 +184,12 @@ struct TokenData_tag_t
     int err_ln, err_col;
     //union
     //{
-        long long n; /* value for constants */
-        char* text; /* text for idents */
+        /* value for constants */
+        long long n;
+
+        /* text for idents */
+        //char* text;
+        std::vector<char> text;
     //};
 };
 
@@ -221,6 +229,46 @@ struct CodeItem_tag_t
     const char* text;
     int op;
 };
+
+
+struct CodeInfo
+{
+
+    int32_t offset;
+
+    const char* opname;
+    int opcpode;
+    int32_t val1;
+    int32_t val2;
+
+    CodeInfo(int32_t ofs, const char* on, int ov)
+    {
+        
+    }
+
+    void write(FILE* fp)
+    {
+        fprintf(fp, "");
+    }
+};
+
+
+extern "C"
+{
+    void error(int err_line, int err_col, const char *fmt, ...);
+
+    void vm_emit_int(int32_t n);
+
+    void vm_emit_byte(int c);
+
+    Tree_t *analyzer_makeNode(int node_type, Tree_t *left, Tree_t *right);
+
+    char *rtrim(char *text, int *len);
+
+    void init_io(FILE **fp, FILE *std, const char mode[], const char fn[]);
+
+    int read_line(FILE *source_fp, char* dest, int maxlen);
+}
 
 
 static const NodeItem_t displaynodes_data[]=
@@ -389,13 +437,4 @@ static const DependencyItem_t  anattr_data[] =
 };
 
 
-void vm_emit_int(int32_t n);
-void vm_emit_byte(int c);
-void error(int err_line, int err_col, const char *fmt, ...);
-Tree_t *make_node(int node_type, Tree_t *left, Tree_t *right);
-char *rtrim(char *text, int *len);
-char* copystrn(const char* s, unsigned int len);
-char* copystr(const char* s);
-void init_io(FILE **fp, FILE *std, const char mode[], const char fn[]);
-int read_line(FILE *source_fp, char* dest, int maxlen);
 
